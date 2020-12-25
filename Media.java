@@ -1,19 +1,26 @@
 import javax.swing.*;
 import javax.swing.filechooser.*;
+import javax.swing.text.MaskFormatter;
+
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.border.Border;
 import java.text.Format;
+import java.text.ParseException;
 import java.text.DateFormat;
+import java.io.*;
 
 class UI extends JFrame implements ActionListener
 {
     Font style = new Font("TimesRoman", Font.PLAIN, 18);
     Font sub = new Font("TimesRoman", Font.PLAIN, 16);
     Border blackline = BorderFactory.createLineBorder(Color.black);
+    File file;
 
     String extension;
     Format time = DateFormat.getTimeInstance(DateFormat.SHORT);
+    String[] tList = new String[]{"mp3","wav","mp4","mkv","MOV"};
+
     private static final long serialVersionUID = -4737755530764696856L;
 
     JFrame frame = new JFrame("Kronos");
@@ -24,23 +31,24 @@ class UI extends JFrame implements ActionListener
 
     JCheckBox trim = new JCheckBox("Trim");
     JLabel from = new JLabel("From");
-    JFormattedTextField fromT = new JFormattedTextField(time);
+    JFormattedTextField fromT;
     JLabel to = new JLabel("To");
-    JFormattedTextField toT = new JFormattedTextField();
-    JLabel duration = new JLabel("Duration");
-    JLabel durationT = new JLabel();
+    JFormattedTextField toT;
 
     JLabel format = new JLabel("Format");
     JLabel source = new JLabel("Source Format");
     JLabel sourceText = new JLabel();
     JLabel target  = new JLabel("Target Format");
-    JComboBox targetText = new JComboBox();
+    JComboBox<String> targetText = new JComboBox<String>(tList);
 
     JLabel chooseOu = new JLabel();
     JLabel outputfield = new JLabel();
     JButton save = new JButton("Choose");
 
     JButton start = new JButton("Start Conversion");
+
+    JFileChooser fileOpen = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+    JFileChooser fileSave = new JFileChooser();
 
     UI()
     {
@@ -61,15 +69,19 @@ class UI extends JFrame implements ActionListener
         open.addActionListener(this);
 
         trim.setBounds(10,100,100,50);
-        /*trim.addItemListener(new ItemListener()
-        {    
-            public void itemStateChanged(ItemEvent e) 
-            {                 
-               label.setText("C++ Checkbox: "     
-               + (e.getStateChange()==1?"checked":"unchecked"));    
-            }    
-        });*/
-        trim.setFont(sub);
+        trim.addActionListener(this);
+
+        try
+        {
+            MaskFormatter mask = new MaskFormatter("##:##:##");
+            mask.setPlaceholderCharacter('0');
+            fromT = new JFormattedTextField(mask);
+            toT = new JFormattedTextField(mask);
+        }
+        catch(ParseException e)
+        {
+            e.printStackTrace();
+        }
 
         from.setBounds(10,160,50,30);
         from.setFont(sub);
@@ -77,6 +89,7 @@ class UI extends JFrame implements ActionListener
         fromT.setBounds(70,160,100,30);
         fromT.setFont(sub);
         fromT.setHorizontalAlignment(JLabel.CENTER);
+        fromT.addActionListener(this);
 
         to.setBounds(190,160,50,30);
         to.setFont(sub);
@@ -84,16 +97,12 @@ class UI extends JFrame implements ActionListener
         toT.setBounds(230,160,100,30);
         toT.setFont(sub);
         toT.setHorizontalAlignment(JLabel.CENTER);
+        toT.addActionListener(this);
 
-        duration.setBounds(400,160,80,30);
-        duration.setFont(sub);
-
-        durationT.setBounds(470,160,100,30);
-        durationT.setFont(sub);
-        durationT.setHorizontalAlignment(JLabel.CENTER);
-        durationT.setOpaque(true);
-        durationT.setBorder(blackline);
-        durationT.setBackground(Color.WHITE);
+        from.setEnabled(false);
+        fromT.setEnabled(false);
+        to.setEnabled(false);
+        toT.setEnabled(false);
 
         format.setBounds(10,250,300,20);
         format.setFont(style);
@@ -102,7 +111,6 @@ class UI extends JFrame implements ActionListener
         source.setFont(sub);
 
         sourceText.setBounds(170,300,70,20);
-        sourceText.setFont(sub);
         sourceText.setHorizontalAlignment(JLabel.CENTER);
         sourceText.setOpaque(true);
         sourceText.setBorder(blackline);
@@ -141,8 +149,6 @@ class UI extends JFrame implements ActionListener
         frame.add(fromT);
         frame.add(to);
         frame.add(toT);
-        frame.add(duration);
-        frame.add(durationT);
         frame.add(format);
         frame.add(source);
         frame.add(sourceText);
@@ -163,22 +169,71 @@ class UI extends JFrame implements ActionListener
     {
         if(e.getSource()==open)
         {
-            JFileChooser fileOpen = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
-            int r = fileOpen.showOpenDialog(null);
+            int r = fileOpen.showOpenDialog(frame);
             if (r==JFileChooser.APPROVE_OPTION)   
             {
                 String filename =  fileOpen.getSelectedFile().getAbsolutePath();
+                this.file = new File(filename);
+                fileSave.setCurrentDirectory(this.file.getParentFile());
+
                 inputfield.setText(filename);
                 outputfield.setText(filename+"_edit");
                 int index = filename.lastIndexOf('.');
                 extension = filename.substring(index+1);
-                System.out.print(extension);
+
+                boolean flag=false;
+
+                for(String i:tList)
+                    if(i.compareTo(extension)==0)
+                    {
+                        flag=true;
+                        break;
+                    }
+
+                if(flag==true)
+                    sourceText.setText(extension);
+                else    
+                    sourceText.setText("Unsupported Format");
             }  
         }
 
         else if(e.getSource()==save)
         {
-            
+            int r = fileSave.showSaveDialog(frame);
+
+            if(r==JFileChooser.APPROVE_OPTION)
+            {
+                String saveFile = new String(fileSave.getSelectedFile().getAbsolutePath());
+                outputfield.setText(saveFile);
+            }
+        }
+
+        else if(e.getSource()==trim)
+        {
+            if(trim.isSelected())
+            {
+                from.setEnabled(true);
+                fromT.setEnabled(true);
+                to.setEnabled(true);
+                toT.setEnabled(true);
+            }
+            else
+            {
+                from.setEnabled(false);
+                fromT.setEnabled(false);
+                to.setEnabled(false);
+                toT.setEnabled(false);
+            }
+        }
+
+        else if(e.getSource()==fromT || e.getSource()==toT)
+        {
+        }
+
+        else if(e.getSource()==start)
+        {
+            if(sourceText.getText()=="Unsupported Format" || sourceText.getText()==" ");
+                JOptionPane.showMessageDialog(frame,"Please choose a valid file","Error!", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
