@@ -8,7 +8,20 @@ import javax.swing.border.Border;
 import java.text.Format;
 import java.text.ParseException;
 import java.text.DateFormat;
+import java.text.DecimalFormat;
 import java.io.*;
+
+class Time
+{
+    int seconds;
+    int minutes;
+    int hours;
+
+    void error(JFrame frame)
+    {
+        JOptionPane.showMessageDialog(frame,"Please enter a valid time value","Error!", JOptionPane.ERROR_MESSAGE);
+    }
+}
 
 class UI extends JFrame implements ActionListener
 {
@@ -16,8 +29,9 @@ class UI extends JFrame implements ActionListener
     Font sub = new Font("TimesRoman", Font.PLAIN, 16);
     Border blackline = BorderFactory.createLineBorder(Color.black);
     File file;
+    String saveFile="";
 
-    String extension;
+    String extension,ffmpegCommand;
     Format time = DateFormat.getTimeInstance(DateFormat.SHORT);
     String[] tList = new String[]{"mp3","wav","mp4","mkv","MOV"};
 
@@ -34,6 +48,8 @@ class UI extends JFrame implements ActionListener
     JFormattedTextField fromT;
     JLabel to = new JLabel("To");
     JFormattedTextField toT;
+    JLabel duration = new JLabel("Duration");
+    JLabel durationT = new JLabel();
 
     JLabel format = new JLabel("Format");
     JLabel source = new JLabel("Source Format");
@@ -89,6 +105,7 @@ class UI extends JFrame implements ActionListener
         fromT.setBounds(70,160,100,30);
         fromT.setFont(sub);
         fromT.setHorizontalAlignment(JLabel.CENTER);
+        fromT.setBorder(blackline);
         fromT.addActionListener(this);
 
         to.setBounds(190,160,50,30);
@@ -97,12 +114,26 @@ class UI extends JFrame implements ActionListener
         toT.setBounds(230,160,100,30);
         toT.setFont(sub);
         toT.setHorizontalAlignment(JLabel.CENTER);
+        toT.setBorder(blackline);
         toT.addActionListener(this);
 
         from.setEnabled(false);
         fromT.setEnabled(false);
         to.setEnabled(false);
         toT.setEnabled(false);
+
+        duration.setBounds(400,160,80,30);
+        duration.setFont(sub);
+        duration.setEnabled(false);
+
+        durationT.setBounds(470,160,100,30);
+        durationT.setFont(sub);
+        durationT.setHorizontalAlignment(JLabel.CENTER);
+        durationT.setOpaque(true);
+        durationT.setBorder(blackline);
+        durationT.setBackground(Color.WHITE);
+        durationT.setText("00:00:00");
+        durationT.setEnabled(false);
 
         format.setBounds(10,250,300,20);
         format.setFont(style);
@@ -121,6 +152,7 @@ class UI extends JFrame implements ActionListener
 
         targetText.setBounds(430,300,90,20);
         targetText.setBackground(Color.WHITE);
+        targetText.addActionListener(this);
 
         chooseOu.setBounds(10,400,300,20);
         chooseOu.setText("Choose the save location");
@@ -149,6 +181,8 @@ class UI extends JFrame implements ActionListener
         frame.add(fromT);
         frame.add(to);
         frame.add(toT);
+        frame.add(duration);
+        frame.add(durationT);
         frame.add(format);
         frame.add(source);
         frame.add(sourceText);
@@ -167,31 +201,36 @@ class UI extends JFrame implements ActionListener
 
     public void actionPerformed(ActionEvent e)
     {
+        String filename;
+
         if(e.getSource()==open)
         {
             int r = fileOpen.showOpenDialog(frame);
             if (r==JFileChooser.APPROVE_OPTION)   
             {
-                String filename =  fileOpen.getSelectedFile().getAbsolutePath();
+                filename =  fileOpen.getSelectedFile().getAbsolutePath();
                 this.file = new File(filename);
                 fileSave.setCurrentDirectory(this.file.getParentFile());
 
                 inputfield.setText(filename);
-                outputfield.setText(filename+"_edit");
                 int index = filename.lastIndexOf('.');
                 extension = filename.substring(index+1);
 
                 boolean flag=false;
+                int i;
 
-                for(String i:tList)
-                    if(i.compareTo(extension)==0)
+                for(i=0;i<tList.length;++i)
+                    if(tList[i].compareTo(extension)==0)
                     {
                         flag=true;
                         break;
                     }
 
                 if(flag==true)
+                {
                     sourceText.setText(extension);
+                    targetText.setSelectedIndex(i);
+                }
                 else    
                     sourceText.setText("Unsupported Format");
             }  
@@ -203,8 +242,8 @@ class UI extends JFrame implements ActionListener
 
             if(r==JFileChooser.APPROVE_OPTION)
             {
-                String saveFile = new String(fileSave.getSelectedFile().getAbsolutePath());
-                outputfield.setText(saveFile);
+                saveFile = new String(fileSave.getSelectedFile().getAbsolutePath());
+                outputfield.setText(saveFile+"."+targetText.getSelectedItem().toString());
             }
         }
 
@@ -216,6 +255,8 @@ class UI extends JFrame implements ActionListener
                 fromT.setEnabled(true);
                 to.setEnabled(true);
                 toT.setEnabled(true);
+                duration.setEnabled(true);
+                durationT.setEnabled(true);
             }
             else
             {
@@ -223,11 +264,84 @@ class UI extends JFrame implements ActionListener
                 fromT.setEnabled(false);
                 to.setEnabled(false);
                 toT.setEnabled(false);
+                duration.setEnabled(false);
+                durationT.setEnabled(false);
             }
         }
 
         else if(e.getSource()==fromT || e.getSource()==toT)
+        {            
+            Time fromTime = new Time();
+            Time toTime = new Time();
+            Time diff = new Time();
+
+            fromTime.hours = Integer.parseInt(fromT.getText().substring(0,2));
+            fromTime.minutes = Integer.parseInt(fromT.getText().substring(3,5));
+            fromTime.seconds = Integer.parseInt(fromT.getText().substring(6,8));
+
+            toTime.hours = Integer.parseInt(toT.getText().substring(0,2));
+            toTime.minutes = Integer.parseInt(toT.getText().substring(3,5));
+            toTime.seconds = Integer.parseInt(toT.getText().substring(6,8));
+
+            if(fromTime.minutes>59 || fromTime.seconds>59 || toTime.minutes>59 || toTime.seconds>59)
+                diff.error(frame);
+
+            else
+            {
+                if(fromTime.seconds>toTime.seconds)
+                {
+                    --toTime.minutes;
+                    toTime.seconds+=60;
+                }
+    
+                diff.seconds = toTime.seconds-fromTime.seconds;
+
+                if(fromTime.minutes>toTime.minutes)
+                {
+                    --toTime.hours;
+                    toTime.minutes+=60;
+                }
+                
+                diff.minutes=toTime.minutes-fromTime.minutes;
+                diff.hours=toTime.hours-fromTime.hours;
+
+                if(diff.hours<0 || diff.minutes<0 || diff.seconds<0)
+                    diff.error(frame);
+
+                else
+                {
+                    DecimalFormat formatter = new DecimalFormat("00");
+                    String hours = formatter.format((diff.hours));
+                    String minutes = formatter.format((diff.minutes));
+                    String seconds = formatter.format((diff.seconds));
+
+                    String durationTime = hours+":"+minutes+":"+seconds;
+                    this.durationT.setText(durationTime);
+                }
+            }
+        }
+
+        else if(e.getSource()==targetText)
         {
+            String outputExtension  = targetText.getSelectedItem().toString();
+            int index;
+            String currentOutput,newOutput;
+
+            if(saveFile=="")
+            {
+                currentOutput = inputfield.getText();
+                index = currentOutput.lastIndexOf('.');
+                newOutput = currentOutput.substring(0,index)+"_edit."+outputExtension;
+            }
+            
+            else
+            {
+                currentOutput = outputfield.getText();                
+                index = currentOutput.lastIndexOf('.');
+                newOutput = currentOutput.substring(0,index)+"."+outputExtension;
+            }
+
+            this.outputfield.setText(newOutput);
         }
 
         else if(e.getSource()==start)
