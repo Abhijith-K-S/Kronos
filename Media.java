@@ -31,7 +31,7 @@ class UI extends JFrame implements ActionListener
     File file;
     String saveFile="";
 
-    String extension,ffmpegCommand;
+    String extension;
     Format time = DateFormat.getTimeInstance(DateFormat.SHORT);
     String[] tList = new String[]{"mp3","wav","mp4","mkv","MOV"};
 
@@ -346,8 +346,47 @@ class UI extends JFrame implements ActionListener
 
         else if(e.getSource()==start)
         {
-            if(sourceText.getText()=="Unsupported Format" || sourceText.getText()==" ");
+            String ffmpegCommand;
+
+            if(sourceText.getText()=="Unsupported Format" || sourceText.getText()==" ")
                 JOptionPane.showMessageDialog(frame,"Please choose a valid file","Error!", JOptionPane.ERROR_MESSAGE);
+
+            else
+            {
+                if(trim.isSelected())
+                    ffmpegCommand = "ffmpeg -i "+inputfield.getText()+" -ss "+fromT.getText()+" -to "+toT.getText()+" "+outputfield.getText();
+                else
+                    ffmpegCommand = "ffmpeg -i "+inputfield.getText()+" "+outputfield.getText();
+
+                System.out.println(ffmpegCommand);
+
+                try
+                {
+                    Process process = Runtime.getRuntime().exec(ffmpegCommand);
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+                    String line="";
+                    while ((line = reader.readLine ()) != null) 
+                        System.out.println(line);
+
+                    int exitCode = process.waitFor();
+
+                    if(exitCode==0)
+                    {
+                        System.out.println("Process Complete");
+                        JOptionPane.showMessageDialog(frame,"Conversion Complete");
+                    }
+
+                    else
+                        System.out.println("\nExited with error code : " + exitCode);
+
+                }
+                catch(Exception ex)
+                {
+                    JOptionPane.showMessageDialog(frame,"An Exception occurred","ERROR!", JOptionPane.ERROR_MESSAGE);
+                    ex.printStackTrace();
+                }
+            }
         }
     }
 }
