@@ -354,9 +354,9 @@ class UI extends JFrame implements ActionListener
             else
             {
                 if(trim.isSelected())
-                    ffmpegCommand = "ffmpeg -i "+inputfield.getText()+" -ss "+fromT.getText()+" -to "+toT.getText()+" "+outputfield.getText();
+                    ffmpegCommand = "ffmpeg -i \""+inputfield.getText()+"\" -ss "+fromT.getText()+" -to "+toT.getText()+" \""+outputfield.getText()+"\"";
                 else
-                    ffmpegCommand = "ffmpeg -i "+inputfield.getText()+" "+outputfield.getText();
+                    ffmpegCommand = "ffmpeg -i \""+inputfield.getText()+"\" \""+outputfield.getText()+"\"";
 
                 System.out.println(ffmpegCommand);
 
