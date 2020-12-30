@@ -1,4 +1,3 @@
-import javax.management.RuntimeErrorException;
 import javax.swing.*;
 import javax.swing.filechooser.*;
 import javax.swing.text.MaskFormatter;
@@ -31,11 +30,10 @@ class Time
 
 class UI extends JFrame implements ActionListener
 {
-    Font style = new Font("TimesRoman", Font.PLAIN, 18);
-    Font sub = new Font("TimesRoman", Font.PLAIN, 16);
     Border blackline = BorderFactory.createLineBorder(Color.black);
     File file;
     String saveFile="";
+    Font fontCustom,style,sub;
 
     String extension;
     Format time = DateFormat.getTimeInstance(DateFormat.SHORT);
@@ -79,6 +77,19 @@ class UI extends JFrame implements ActionListener
 
     UI()
     {
+        try
+        {
+            InputStream is = this.getClass().getResourceAsStream("font.ttf");
+            fontCustom = Font.createFont(Font.TRUETYPE_FONT,is);
+            style = fontCustom.deriveFont(18f);    
+            sub = fontCustom.deriveFont(16f);
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+        
+
         frame.setSize(600,600);
 
         chooseIn.setBounds(10,10,300,20);
