@@ -1,3 +1,4 @@
+import javax.management.RuntimeErrorException;
 import javax.swing.*;
 import javax.swing.filechooser.*;
 import javax.swing.text.MaskFormatter;
@@ -21,6 +22,11 @@ class Time
     {
         JOptionPane.showMessageDialog(frame,"Please enter a valid time value","Error!", JOptionPane.ERROR_MESSAGE);
     }
+
+    void errorDuration(JFrame frame)
+    {
+        JOptionPane.showMessageDialog(frame,"Minimum duration is 1 second!","Error!", JOptionPane.ERROR_MESSAGE);
+    }
 }
 
 class UI extends JFrame implements ActionListener
@@ -33,7 +39,7 @@ class UI extends JFrame implements ActionListener
 
     String extension;
     Format time = DateFormat.getTimeInstance(DateFormat.SHORT);
-    String[] tList = new String[]{"mp3","wav","mp4","mkv","MOV"};
+    String[] tList = new String[]{" ","mp3","wav","mp4","mkv","MOV"};
 
     private static final long serialVersionUID = -4737755530764696856L;
 
@@ -65,6 +71,11 @@ class UI extends JFrame implements ActionListener
 
     JFileChooser fileOpen = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
     JFileChooser fileSave = new JFileChooser();
+
+    void errorMessage(String message) 
+    {
+        JOptionPane.showMessageDialog(frame,message,"Error!", JOptionPane.ERROR_MESSAGE);
+    }
 
     UI()
     {
@@ -307,6 +318,9 @@ class UI extends JFrame implements ActionListener
 
                 if(diff.hours<0 || diff.minutes<0 || diff.seconds<0)
                     diff.error(frame);
+                
+                else if(diff.hours==0 && diff.minutes==0 && diff.seconds==0)
+                    diff.errorDuration(frame);
 
                 else
                 {
@@ -348,8 +362,20 @@ class UI extends JFrame implements ActionListener
         {
             String ffmpegCommand;
 
-            if(sourceText.getText()=="Unsupported Format" || sourceText.getText()==" ")
-                JOptionPane.showMessageDialog(frame,"Please choose a valid file","Error!", JOptionPane.ERROR_MESSAGE);
+            if(inputfield.getText()=="" || outputfield.getText()=="")
+                errorMessage("Please fill all the valid fields");
+            
+            else if(trim.isSelected() && durationT.getText()=="00:00:00")
+                errorMessage("Duration cannot be zero");
+
+            else if(sourceText.getText()=="Unsupported Format" || sourceText.getText()==" ")
+                errorMessage("Please choose a valid file");
+
+            else if(targetText.getSelectedIndex()==0)
+                errorMessage("Please choose a valid target format");
+
+            else if(sourceText.getText()==targetText.getSelectedItem().toString())
+                errorMessage("Source format and target format cannot be the same");
 
             else
             {
@@ -378,12 +404,14 @@ class UI extends JFrame implements ActionListener
                     }
 
                     else
+                    {
                         System.out.println("\nExited with error code : " + exitCode);
-
+                        throw new RuntimeException();
+                    }
                 }
                 catch(Exception ex)
                 {
-                    JOptionPane.showMessageDialog(frame,"An Exception occurred","ERROR!", JOptionPane.ERROR_MESSAGE);
+                    errorMessage("An Exception occurred!\nPlease try again");
                     ex.printStackTrace();
                 }
             }
