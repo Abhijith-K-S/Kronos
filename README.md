@@ -21,6 +21,6 @@ Compile the Media.java file using
 `javac Media.java`
 
 Make a Executable JAR file using  
-`jar cvfe Kronos.jar Media *.class`
+`jar cvfe Kronos.jar Media *.class font.tff`
 
 Voila!, now Kronos is ready for usage. You can access it using the `Kronos.jar` file
