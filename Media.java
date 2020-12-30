@@ -372,6 +372,7 @@ class UI extends JFrame implements ActionListener
         else if(e.getSource()==start)
         {
             String ffmpegCommand;
+            File file = new File(outputfield.getText());
 
             if(inputfield.getText()=="" || outputfield.getText()=="")
                 errorMessage("Please fill all the valid fields");
@@ -385,8 +386,11 @@ class UI extends JFrame implements ActionListener
             else if(targetText.getSelectedIndex()==0)
                 errorMessage("Please choose a valid target format");
 
-            else if(sourceText.getText()==targetText.getSelectedItem().toString())
+            else if(sourceText.getText().compareTo(targetText.getSelectedItem().toString())==0)
                 errorMessage("Source format and target format cannot be the same");
+            
+            else if(file.exists())
+                errorMessage("File already exists!\nPlease enter a valid file name");
 
             else
             {
